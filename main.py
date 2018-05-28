@@ -51,8 +51,21 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
     :param num_classes: Number of classes to classify
     :return: The Tensor for the last layer of output
     """
-    # TODO: Implement function
-    return None
+    layer7_1x1 = tf.layers.conv2d(vgg_layer7_out, num_classes, 1, padding='same',
+                                  kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+    layer7_upsample = tf.layers.conv2d_transpose(layer7_1x1, num_classes, 4, 2, 'same',
+                                                 kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+    layer4_1x1 = tf.layers.conv2d(vgg_layer4_out, num_classes, 1, padding='same',
+                                  kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+    layer4_7 = tf.add(layer7_upsample, layer4_1x1)
+    layer4_7_upsample = tf.layers.conv2d_transpose(layer4_7, num_classes, 4, 2, 'same',
+                                                   kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+    layer3_1x1 = tf.layers.conv2d(vgg_layer3_out, num_classes, 1, padding='same',
+                                  kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+
+    layer4_7_3 = tf.add(layer4_7_upsample, layer3_1x1)
+    return tf.layers.conv2d_transpose(layer4_7_3, num_classes, 16, 8, 'same',
+                                      kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
 
 
 tests.test_layers(layers)
@@ -120,7 +133,8 @@ def run():
         #  https://datascience.stackexchange.com/questions/5224/how-to-prepare-augment-images-for-neural-network
 
         # TODO: Build NN using load_vgg, layers, and optimize function
-
+        input_image, keep_prob, layer3_out, layer4_out, layer7_out = load_vgg(sess, vgg_path)
+        final_layer = layers(layer3_out, layer4_out, layer7_out, num_classes)
         # TODO: Train NN using the train_nn function
 
         # TODO: Save inference data using helper.save_inference_samples
