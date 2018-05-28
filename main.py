@@ -62,7 +62,6 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
                                                    kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
     layer3_1x1 = tf.layers.conv2d(vgg_layer3_out, num_classes, 1, padding='same',
                                   kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
-
     layer4_7_3 = tf.add(layer4_7_upsample, layer3_1x1)
     return tf.layers.conv2d_transpose(layer4_7_3, num_classes, 16, 8, 'same',
                                       kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
@@ -80,8 +79,15 @@ def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
     :param num_classes: Number of classes to classify
     :return: Tuple of (logits, train_op, cross_entropy_loss)
     """
-    # TODO: Implement function
-    return None, None, None
+
+    # make logits a 2D tensor where each row represents a pixel and each column a class
+    logits = tf.reshape(nn_last_layer, (-1, num_classes))
+    labels = tf.reshape(correct_label, (-1, num_classes))
+
+    loss_function = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=labels, logits=logits))
+    training_operation = tf.train.AdamOptimizer(learning_rate).minimize(loss_function)
+
+    return logits, training_operation, loss_function
 
 
 tests.test_optimize(optimize)
